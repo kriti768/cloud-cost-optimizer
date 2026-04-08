@@ -62,6 +62,11 @@ except ImportError:
             self.description = description
 
 
+def _strict_unit_interval(score: float) -> float:
+    """Clamp scores to the open interval (0, 1) for validator compatibility."""
+    return min(0.9999, max(0.0001, round(float(score), 4)))
+
+
 # ---------------------------------------------------------------------------
 # Shared system context injected into every prompt
 # ---------------------------------------------------------------------------
@@ -81,8 +86,9 @@ Environment rules you must know:
 - Instances i-001 through i-005 are clearly overprovisioned (CPU ≤ 8%).
 - Instances i-015 through i-020 are stable anchors — resizing them causes SLA breaches.
 
-Score strictly on a 0.0–1.0 scale. Output ONLY a JSON object in this exact format:
-{"score": <float 0.0-1.0>, "reasoning": "<one concise sentence>"}
+Score strictly within the open interval (0, 1). Never return exactly 0.0 or 1.0.
+Output ONLY a JSON object in this exact format:
+{"score": <float between 0 and 1>, "reasoning": "<one concise sentence>"}
 
 Do not include markdown, code blocks, or any other text outside the JSON object.
 """
@@ -572,9 +578,9 @@ async def score_episode(
         ),
     )
 
-    task_score      = float(task_result.get("score", 0.0))
-    coherence_score = float(coherence_result.get("score", 0.0))
-    combined        = round(0.70 * task_score + 0.30 * coherence_score, 4)
+    task_score = _strict_unit_interval(task_result.get("score", 0.5))
+    coherence_score = _strict_unit_interval(coherence_result.get("score", 0.5))
+    combined = _strict_unit_interval(0.70 * task_score + 0.30 * coherence_score)
 
     return EpisodeScore(
         task_score=task_score,
