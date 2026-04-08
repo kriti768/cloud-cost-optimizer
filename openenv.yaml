@@ -1,0 +1,150 @@
+name: cloud-cost-optimizer
+version: "1.0.0"
+description: >
+  A real-world reinforcement learning environment where an AI agent learns to
+  reduce cloud infrastructure costs by right-sizing instances, scheduling
+  scale-down windows, and managing spot/reserved pricing — without violating
+  SLA constraints. Simulates a 20-instance AWS fleet over 72 hours with
+  stochastic utilization, traffic patterns, and spot interruptions.
+
+author: "DELL"
+license: MIT
+tags:
+  - cloud
+  - cost-optimization
+  - infrastructure
+  - scheduling
+  - real-world
+
+# ── Episode configuration ──────────────────────────────────────────────────
+episode:
+  max_steps: 72            # 72 simulated hours per episode
+  time_step: "1 hour"
+  scenarios:
+    - default              # mixed fleet, all tasks available
+
+# ── Action space ──────────────────────────────────────────────────────────
+action_space:
+  type: discrete_named     # MCP tool-call style actions (RFC 004)
+  actions:
+    resize:
+      description: Change an instance to a different type (up or down)
+      parameters:
+        instance_id: {type: string, required: true}
+        new_type:    {type: string, required: true,
+                      enum: [t3.small, t3.medium, t3.large, m5.large,
+                             m5.xlarge, m5.2xlarge, m5.4xlarge, m5.8xlarge,
+                             c5.xlarge, c5.2xlarge, r5.large, r5.xlarge]}
+    schedule:
+      description: Set automatic scale-down / scale-up hours for an instance
+      parameters:
+        instance_id:  {type: string,  required: true}
+        schedule_off: {type: integer, required: true, minimum: 0, maximum: 23}
+        schedule_on:  {type: integer, required: true, minimum: 0, maximum: 23}
+    convert_spot:
+      description: Switch instance to spot pricing (68% cheaper, interruptible)
+      parameters:
+        instance_id: {type: string, required: true}
+    reserve:
+      description: Commit instance to 1-year reserved pricing (40% cheaper, stable)
+      parameters:
+        instance_id: {type: string, required: true}
+    restore:
+      description: Restore an interrupted spot instance to on-demand
+      parameters:
+        instance_id: {type: string, required: true}
+    noop:
+      description: Take no action this step
+      parameters: {}
+
+# ── Observation space ──────────────────────────────────────────────────────
+observation_space:
+  type: dict
+  fields:
+    hour:               {type: integer, description: "Elapsed episode hours (0-72)"}
+    hour_of_day:        {type: integer, description: "Time of day (0-23)"}
+    instances:          {type: array,   description: "Array of 20 instance state objects"}
+    total_cost_so_far:  {type: number,  description: "Cumulative USD cost this episode"}
+    sla_violations:     {type: integer, description: "Total SLA breach count"}
+    savings_vs_baseline:{type: number,  description: "USD saved vs no-action baseline"}
+    scheduled_actions:  {type: object,  description: "Active schedule rules per instance"}
+
+# ── Reward ─────────────────────────────────────────────────────────────────
+reward:
+  type: dense             # reward given every step, not just at episode end
+  description: >
+    Each step: +USD saved this hour vs on-demand baseline
+               -0.15 per SLA violation (CPU > 90%)
+               -0.15 per unhandled spot interruption on non-stateless workload
+  range: [-5.0, 5.0]
+  partial_credit: true    # scores between 0–1, not binary
+
+# ── Tasks ──────────────────────────────────────────────────────────────────
+tasks:
+  - id: task1
+    name: "Identify overprovisioned instances"
+    difficulty: easy
+    score_range: [0.0, 1.0]
+    description: >
+      5 instances (i-001 to i-005) are massively oversized — CPU never exceeds 8%.
+      Agent must identify and downsize all 5 within 72 steps without touching the
+      6 stable anchor instances (i-015 to i-020).
+    grader: tasks/task1_grader.py
+    rubric: rubrics.task1_trajectory_judge
+    target_instances: [i-001, i-002, i-003, i-004, i-005]
+    forbidden_instances: [i-015, i-016, i-017, i-018, i-019, i-020]
+
+  - id: task2
+    name: "Schedule-aware scaling"
+    difficulty: medium
+    score_range: [0.0, 1.0]
+    description: >
+      10 instances follow predictable traffic patterns. Agent must learn that
+      web_api workloads peak at 2pm and data_pipeline workloads peak at 3am,
+      then schedule scale-downs during the quiet windows. Penalised for SLA
+      breaches caused by poor timing.
+    grader: tasks/task2_grader.py
+    rubric: rubrics.task2_trajectory_judge
+    dimensions:
+      - timing_intelligence: 0.40
+      - sla_preservation:    0.35
+      - savings_efficiency:  0.25
+
+  - id: task3
+    name: "Spot + reserved portfolio blending"
+    difficulty: hard
+    score_range: [0.0, 1.0]
+    description: >
+      Agent manages a 3-account fleet and must decide: which workloads go to
+      spot (stateless/batch — safe for interruption), which go to reserved
+      (databases/steady — need stability), and which stay on-demand. Must
+      monitor for spot interruptions and restore within 2 hours. Budget
+      constraints apply across all 3 accounts.
+    grader: tasks/task3_grader.py
+    rubric: rubrics.task3_trajectory_judge
+    dimensions:
+      - workload_classification: 0.35
+      - interruption_response:   0.30
+      - portfolio_efficiency:    0.20
+      - budget_discipline:       0.15
+
+# ── LLM-as-judge ──────────────────────────────────────────────────────────
+evaluation:
+  llm_judge: true
+  judge_module: rubrics
+  trajectory_judge: rubrics.trajectory_coherence_judge
+  episode_scorer: rubrics.score_episode
+  final_score_formula: "0.70 * task_score + 0.30 * coherence_score"
+
+# ── Environment variables required ─────────────────────────────────────────
+env_vars:
+  API_BASE_URL: "The API endpoint for the LLM used in rubric evaluation"
+  MODEL_NAME:   "The model identifier for inference (for example gpt-4o-mini)"
+  HF_TOKEN:     "API key used by inference.py for OpenAI-compatible model calls"
+
+# ── Infrastructure ─────────────────────────────────────────────────────────
+infrastructure:
+  min_vcpu: 2
+  min_memory_gb: 8
+  inference_timeout_minutes: 20
+  dockerfile: Dockerfile
