@@ -6,7 +6,7 @@ colorTo: gray
 sdk: docker
 pinned: false
 license: mit
-short_description: "Production-style OpenEnv environment for cloud cost optimization across 3 graded tasks."
+short_description: "OpenEnv RL for cloud cost optimization"
 ---
 
 # Cloud Cost Optimizer
