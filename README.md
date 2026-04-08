@@ -1,10 +1,12 @@
 ---
 title: Cloud Cost Optimizer
-emoji: "☁️"
-colorFrom: blue
-colorTo: indigo
+emoji: "🏢"
+colorFrom: indigo
+colorTo: gray
 sdk: docker
 pinned: false
+license: mit
+short_description: "Production-style OpenEnv environment for cloud cost optimization across 3 graded tasks."
 ---
 
 # Cloud Cost Optimizer
@@ -16,7 +18,7 @@ The environment models a 20-instance fleet over 72 simulated hours. The agent ca
 ## Why this aligns with the hackathon requirements
 
 - Real-world task: cloud infrastructure cost optimization with SLA risk, workload timing, and pricing tradeoffs.
-- OpenEnv spec: typed models live in `models.py`, the environment implements `reset()`, `step()`, and `state()` in `server/environment.py`, and `openenv.yaml` defines tasks, spaces, reward, and infrastructure metadata.
+- OpenEnv spec: typed models live in `models.py`, the environment implements `reset()`, `step()`, and `state` in `server/environment.py`, and `openenv.yaml` defines tasks, spaces, reward, and infrastructure metadata.
 - Three tasks: easy, medium, and hard tasks are declared in `openenv.yaml` and backed by deterministic graders in `tasks/`.
 - Dense reward: each step rewards hourly savings and penalizes SLA breaches and unsafe interruption handling.
 - Baseline inference: `inference.py` runs all three tasks with reproducible seed `42` and emits `[START]`, `[STEP]`, and `[END]` logs.
@@ -103,10 +105,13 @@ LLM-based rubric helpers also exist in [`rubrics.py`](./rubrics.py) for richer t
 - `GET /`: health check
 - `GET /health`: secondary health endpoint
 - `GET /web`: interactive browser UI for manual reset/step/state testing
+- `POST /ui/reset`: session-backed UI reset route
+- `POST /ui/step`: session-backed UI step route
+- `GET /ui/state`: session-backed UI state route
+- `POST /reset`: OpenEnv reset route
+- `POST /step`: OpenEnv step route
+- `GET /state`: OpenEnv state route
 - `GET /docs`: Swagger docs
-- `POST /reset`: start a new episode
-- `POST /step`: take an action
-- `GET /state`: get current episode state
 - `WS /ws`: WebSocket interface
 - `GET /tools`: tool discovery for OpenEnv-style integrations
 
@@ -125,7 +130,7 @@ uv pip install fastapi "uvicorn[standard]" pydantic openai openenv-core httpx we
 ### 2. Run the server locally
 
 ```powershell
-uvicorn server.app:app --host 0.0.0.0 --port 7860
+.\.venv\Scripts\python.exe -m uvicorn server.app:app --host 0.0.0.0 --port 7860
 ```
 
 Then open:
@@ -136,24 +141,14 @@ Then open:
 
 ## Step 4: test `inference.py` locally
 
-If you do not have an API key yet, the script now falls back to a deterministic heuristic so it still completes locally and prints the required structured logs.
-
-Windows PowerShell:
+For the free local baseline:
 
 ```powershell
+cd C:\Users\DELL\Downloads\cloud_cost_env
+Remove-Item Env:HF_TOKEN -ErrorAction SilentlyContinue
 $env:API_BASE_URL="https://api.openai.com/v1"
 $env:MODEL_NAME="gpt-4o-mini"
-$env:HF_TOKEN="your_openai_api_key"
 .\.venv\Scripts\python.exe inference.py
-```
-
-Mac/Linux shell:
-
-```bash
-export API_BASE_URL=https://api.openai.com/v1
-export MODEL_NAME=gpt-4o-mini
-export HF_TOKEN=your_openai_api_key
-python inference.py
 ```
 
 Expected behavior:
@@ -163,33 +158,23 @@ Expected behavior:
 
 ## Step 5: test Docker locally
 
-Build:
+If Docker is available on your machine:
 
 ```powershell
 docker build -t cloud-cost-optimizer .
-```
-
-Run:
-
-```powershell
 docker run -p 7860:7860 cloud-cost-optimizer
-```
-
-Then test:
-
-```powershell
 curl http://localhost:7860/
 curl http://localhost:7860/health
 ```
 
-If those return a healthy JSON response, the container is in the same shape Hugging Face Spaces will use.
+If virtualization is unavailable locally, Hugging Face Spaces can still build the Docker image remotely from this repo.
 
 ## Deploy to Hugging Face Spaces
 
 1. Create a new Hugging Face Space.
 2. Choose `Docker` as the Space SDK.
 3. Upload this repository as-is, or push it from git.
-4. In the Space settings, add secrets:
+4. If you want external model API access, add these in Space settings:
    - `API_BASE_URL=https://api.openai.com/v1`
    - `MODEL_NAME=gpt-4o-mini`
    - `HF_TOKEN=<your OpenAI-compatible API key>`
@@ -201,5 +186,5 @@ If those return a healthy JSON response, the container is in the same shape Hugg
 
 ## Notes for submission
 
-- Replace the `author` field in [`openenv.yaml`](./openenv.yaml) with your actual Hugging Face username before final submission if you want it to reflect your account.
-- If you want the strongest leaderboard result, add a real API key before running `inference.py`; otherwise the heuristic fallback is useful for validation but not necessarily for best scores.
+- Replace the `author` field in [`openenv.yaml`](./openenv.yaml) with your actual Hugging Face username before final submission.
+- The current baseline works without a paid API key by using a task-aware rule-based policy.
