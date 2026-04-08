@@ -48,16 +48,40 @@ if HF_TOKEN:
 # The checker parses these with exact string matching.
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-def log_start(task_id: str, task_name: str, seed: int):
-    print(f"[START] {json.dumps({'event':'START','task_id':task_id,'task_name':task_name,'seed':seed,'timestamp':datetime.now(timezone.utc).isoformat()})}", flush=True)
+def log_start(task_name: str):
+    print(
+        f"[START] task={task_name} env=cloud-cost-optimizer model={MODEL_NAME}",
+        flush=True,
+    )
 
-def log_step(task_id: str, step: int, action: dict,
-             reward: float, cumulative_reward: float, sla_violations: int):
-    print(f"[STEP] {json.dumps({'event':'STEP','task_id':task_id,'step':step,'action_type':action.get('action_type','noop'),'instance_id':action.get('instance_id',''),'reward':round(reward,4),'cumulative_reward':round(cumulative_reward,4),'sla_violations':sla_violations})}", flush=True)
 
-def log_end(task_id: str, score: float, savings_pct: float,
-            sla_violations: int, steps: int, duration_s: float):
-    print(f"[END] {json.dumps({'event':'END','task_id':task_id,'score':round(score,4),'savings_pct':round(savings_pct,2),'sla_violations':sla_violations,'steps':steps,'duration_s':round(duration_s,2),'timestamp':datetime.now(timezone.utc).isoformat()})}", flush=True)
+def _action_str(action: dict) -> str:
+    parts = [action.get("action_type", "noop")]
+    if action.get("instance_id"):
+        parts.append(f"instance_id={action['instance_id']}")
+    if action.get("new_type"):
+        parts.append(f"new_type={action['new_type']}")
+    if action.get("schedule_off") is not None:
+        parts.append(f"schedule_off={action['schedule_off']}")
+    if action.get("schedule_on") is not None:
+        parts.append(f"schedule_on={action['schedule_on']}")
+    return "|".join(parts)
+
+
+def log_step(step: int, action: dict, reward: float, done: bool, error: str | None = None):
+    error_text = "null" if error is None else error.replace(" ", "_")
+    print(
+        f"[STEP] step={step} action={_action_str(action)} reward={reward:.4f} done={str(done).lower()} error={error_text}",
+        flush=True,
+    )
+
+
+def log_end(success: bool, rewards: list[float]):
+    rewards_text = ",".join(f"{reward:.4f}" for reward in rewards)
+    print(
+        f"[END] success={str(success).lower()} steps={len(rewards)} rewards={rewards_text}",
+        flush=True,
+    )
 
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -240,12 +264,13 @@ GRADERS = {"task1": grade_task1, "task2": grade_task2, "task3": grade_task3}
 
 def run_task(task_id: str, task_name: str, seed: int = 42) -> dict:
     t0 = time.time()
-    log_start(task_id, task_name, seed)
+    log_start(task_name)
 
     env = CloudCostEnv(scenario="default", seed=seed)
     obs = env.reset()
     obs = obs.model_dump(exclude={"reward", "done", "metadata"})
     cum_r, episode_log = 0.0, []
+    rewards = []
 
     for step in range(72):
         action = get_action(obs, task_id)
@@ -255,17 +280,16 @@ def run_task(task_id: str, task_name: str, seed: int = 42) -> dict:
         info = dict(step_obs.metadata)
         obs = step_obs.model_dump(exclude={"reward", "done", "metadata"})
         cum_r += reward
+        rewards.append(reward)
         episode_log.append({"hour": obs["hour"], "action": action,
                              "reward": reward, "info": info})
-        log_step(task_id, step+1, action, reward, cum_r, obs["sla_violations"])
+        log_step(step + 1, action, reward, done)
         if done:
             break
 
     final = env.state.model_dump()
     score = GRADERS[task_id](final, episode_log)
-    log_end(task_id, score, final.get("savings_pct",0.0),
-            final.get("sla_violations",0), len(episode_log),
-            time.time()-t0)
+    log_end(True, rewards)
     return {"task_id": task_id, "score": score}
 
 
