@@ -43,6 +43,11 @@ if HF_TOKEN:
     client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL, timeout=8.0, max_retries=0)
 
 
+def _strict_unit_interval(score: float) -> float:
+    """Clamp scores to the open interval (0, 1) for validator compatibility."""
+    return min(0.9999, max(0.0001, round(score, 4)))
+
+
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Structured log format â€” DO NOT CHANGE field names or ordering
 # The checker parses these with exact string matching.
@@ -226,7 +231,7 @@ def grade_task1(final_state: dict, log: list) -> float:
             iid = a.get("instance_id","")
             if iid in targets: hit.add(iid)
             if iid in anchors: penalised += 1
-    return round(max(0.0, len(hit)/5 - penalised*0.1), 4)
+    return _strict_unit_interval(max(0.0, len(hit)/5 - penalised*0.1))
 
 def grade_task2(final_state: dict, log: list) -> float:
     sla  = final_state.get("sla_violations", 0)
@@ -235,7 +240,7 @@ def grade_task2(final_state: dict, log: list) -> float:
     sla_s  = 1.0 if sla==0 else (0.6 if sla<=2 else (0.3 if sla<=5 else 0.0))
     save_s = min(pct/40.0, 1.0)
     time_s = min(sched/5.0, 1.0)
-    return round(0.40*time_s + 0.35*sla_s + 0.25*save_s, 4)
+    return _strict_unit_interval(0.40*time_s + 0.35*sla_s + 0.25*save_s)
 
 def grade_task3(final_state: dict, log: list) -> float:
     sla  = final_state.get("sla_violations", 0)
@@ -253,7 +258,7 @@ def grade_task3(final_state: dict, log: list) -> float:
         fast = sum(1 for ev in interrupts
                    if any(abs(r - ev["hour"]) <= 2 for r in restores))
         resp_s = fast / len(interrupts)
-    return round(0.35*cls_s + 0.30*resp_s + 0.20*eff_s + 0.15*bud_s, 4)
+    return _strict_unit_interval(0.35*cls_s + 0.30*resp_s + 0.20*eff_s + 0.15*bud_s)
 
 GRADERS = {"task1": grade_task1, "task2": grade_task2, "task3": grade_task3}
 

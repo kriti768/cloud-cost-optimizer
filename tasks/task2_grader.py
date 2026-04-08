@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 
+def _strict_unit_interval(score: float) -> float:
+    return min(0.9999, max(0.0001, round(score, 4)))
+
+
 def grade(episode_log: list[dict], final_state: dict) -> float:
     """Blend timing behavior, SLA preservation, and savings efficiency."""
     sla = final_state.get("sla_violations", 0)
@@ -16,7 +20,7 @@ def grade(episode_log: list[dict], final_state: dict) -> float:
     savings_score = min(savings_pct / 40.0, 1.0)
     timing_score = min(schedule_actions / 5.0, 1.0)
 
-    return round(0.40 * timing_score + 0.35 * sla_score + 0.25 * savings_score, 4)
+    return _strict_unit_interval(0.40 * timing_score + 0.35 * sla_score + 0.25 * savings_score)
 
 
 def evaluate(episode_log: list[dict], final_state: dict) -> dict:

@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 
+def _strict_unit_interval(score: float) -> float:
+    return min(0.9999, max(0.0001, round(score, 4)))
+
+
 def grade(episode_log: list[dict], final_state: dict) -> float:
     """Score workload classification, interruption response, efficiency, and budget discipline."""
     sla = final_state.get("sla_violations", 0)
@@ -32,12 +36,11 @@ def grade(episode_log: list[dict], final_state: dict) -> float:
         )
         response_score = fast_restores / len(interruptions)
 
-    return round(
+    return _strict_unit_interval(
         0.35 * classification_score
         + 0.30 * response_score
         + 0.20 * efficiency_score
-        + 0.15 * budget_score,
-        4,
+        + 0.15 * budget_score
     )
 
 
