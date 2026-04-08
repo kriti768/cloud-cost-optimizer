@@ -15,6 +15,12 @@ Cloud Cost Optimizer is a real-world OpenEnv reinforcement learning environment 
 
 The environment models a 20-instance fleet over 72 simulated hours. The agent can resize instances, schedule off-peak scale-down windows, convert eligible workloads to spot, reserve stable workloads, and restore interrupted spot capacity. This is meant to feel like an actual cloud FinOps and reliability task rather than a toy control problem.
 
+## Live Demo
+
+- App: [https://kriti98-cloud-cost-optimizer.hf.space/](https://kriti98-cloud-cost-optimizer.hf.space/)
+- Interactive UI: [https://kriti98-cloud-cost-optimizer.hf.space/web](https://kriti98-cloud-cost-optimizer.hf.space/web)
+- API docs: [https://kriti98-cloud-cost-optimizer.hf.space/docs](https://kriti98-cloud-cost-optimizer.hf.space/docs)
+
 ## Why this aligns with the hackathon requirements
 
 - Real-world task: cloud infrastructure cost optimization with SLA risk, workload timing, and pricing tradeoffs.
