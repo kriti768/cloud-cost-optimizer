@@ -7,7 +7,7 @@ description: >
   SLA constraints. Simulates a 20-instance AWS fleet over 72 hours with
   stochastic utilization, traffic patterns, and spot interruptions.
 
-author: "DELL"
+author: "kriti98"
 license: MIT
 tags:
   - cloud
