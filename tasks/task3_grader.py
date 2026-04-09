@@ -3,6 +3,15 @@
 from __future__ import annotations
 
 
+def _normalize_inputs(arg1, arg2=None) -> tuple[list[dict], dict]:
+    """Support both (episode_log, final_state) and (final_state, episode_log)."""
+    if isinstance(arg1, list):
+        return arg1, arg2 if isinstance(arg2, dict) else {}
+    if isinstance(arg2, list):
+        return arg2, arg1 if isinstance(arg1, dict) else {}
+    return [], arg1 if isinstance(arg1, dict) else (arg2 if isinstance(arg2, dict) else {})
+
+
 def _strict_unit_interval(score: float) -> float:
     return min(0.9999, max(0.0001, round(score, 4)))
 
@@ -44,6 +53,12 @@ def grade(episode_log: list[dict], final_state: dict) -> float:
     )
 
 
-def evaluate(episode_log: list[dict], final_state: dict) -> dict:
+def evaluate(arg1, arg2=None) -> dict:
+    episode_log, final_state = _normalize_inputs(arg1, arg2)
     score = grade(episode_log, final_state)
     return {"task_id": "task3", "score": score}
+
+
+def score(arg1, arg2=None) -> float:
+    episode_log, final_state = _normalize_inputs(arg1, arg2)
+    return grade(episode_log, final_state)
