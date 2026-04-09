@@ -25,7 +25,7 @@ The environment models a 20-instance fleet over 72 simulated hours. The agent ca
 
 - Real-world task: cloud infrastructure cost optimization with SLA risk, workload timing, and pricing tradeoffs.
 - OpenEnv spec: typed models live in `models.py`, the environment implements `reset()`, `step()`, and `state` in `server/environment.py`, and `openenv.yaml` defines tasks, spaces, reward, and infrastructure metadata.
-- Three tasks: easy, medium, and hard tasks are declared in `openenv.yaml` and backed by deterministic graders in `tasks/`.
+- Three tasks: easy, medium, and hard tasks are declared in `openenv.yaml` and backed by deterministic graders in `tasks/`, with scores clamped strictly inside `(0, 1)`.
 - Dense reward: each step rewards hourly savings and penalizes SLA breaches and unsafe interruption handling.
 - Baseline inference: `inference.py` runs all three tasks with reproducible seed `42` and emits `[START]`, `[STEP]`, and `[END]` logs.
 - Docker deploy: the repo includes a root `Dockerfile` that serves the FastAPI/OpenEnv app on port `7860`, matching Hugging Face Spaces Docker expectations.
