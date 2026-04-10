@@ -76,7 +76,7 @@ reward:
     Each step: +USD saved this hour vs on-demand baseline
                -0.15 per SLA violation (CPU > 90%)
                -0.15 per unhandled spot interruption on non-stateless workload
-  range: [-5.0, 5.0]
+  range: [0.0001, 0.9999]
   partial_credit: true    # scores between 0–1, not binary
 
 # ── Tasks ──────────────────────────────────────────────────────────────────

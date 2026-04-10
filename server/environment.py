@@ -264,14 +264,19 @@ class CloudCostEnv(_BASE):
         reward += hourly_savings
         self._total_cost += current_hourly
 
+        normalized_reward = self._normalize_reward(reward)
+
         info["hourly_savings"] = round(hourly_savings, 4)
         info["current_hourly_cost"] = round(current_hourly, 4)
         info["hour"] = self.hour
+        info["raw_reward"] = round(reward, 4)
+        info["normalized_reward"] = normalized_reward
 
         self._episode_log.append({
             "hour": self.hour,
             "action": action_data,
-            "reward": round(reward, 4),
+            "reward": normalized_reward,
+            "raw_reward": round(reward, 4),
             "sla_violations": self._sla_violations,
             "hourly_cost": round(current_hourly, 4),
         })
@@ -280,7 +285,7 @@ class CloudCostEnv(_BASE):
             self.done = True
 
         obs = self._observation()
-        obs.reward = round(reward, 4)
+        obs.reward = normalized_reward
         obs.done = self.done
         obs.metadata = info
         return obs
@@ -625,6 +630,16 @@ class CloudCostEnv(_BASE):
                 for iid, (off, on) in self._scheduled_actions.items()
             },
         )
+
+    def _normalize_reward(self, raw_reward: float) -> float:
+        """
+        Map the dense raw reward into the strict open interval (0, 1).
+
+        This preserves ordering and partial progress while satisfying validators
+        that require reward-like scores to avoid exact 0.0 or 1.0 values.
+        """
+        squashed = 1.0 / (1.0 + math.exp(-raw_reward))
+        return min(0.9999, max(0.0001, round(squashed, 4)))
 
     # ------------------------------------------------------------------
     # Helpers
