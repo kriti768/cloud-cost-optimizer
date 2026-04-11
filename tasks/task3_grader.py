@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-def _normalize_inputs(arg1, arg2=None) -> tuple[list[dict], dict]:
+def _normalize_inputs(arg1=None, arg2=None) -> tuple[list[dict], dict]:
     """Support both (episode_log, final_state) and (final_state, episode_log)."""
     if isinstance(arg1, list):
         return arg1, arg2 if isinstance(arg2, dict) else {}
@@ -16,8 +16,9 @@ def _strict_unit_interval(score: float) -> float:
     return min(0.90, max(0.10, round(score, 4)))
 
 
-def grade(episode_log: list[dict], final_state: dict) -> float:
+def grade(episode_log: list[dict] | None = None, final_state: dict | None = None) -> float:
     """Score workload classification, interruption response, efficiency, and budget discipline."""
+    episode_log, final_state = _normalize_inputs(episode_log, final_state)
     sla = final_state.get("sla_violations", 0)
     savings_pct = final_state.get("savings_pct", 0.0)
     spot_instances = final_state.get("spot_instances", 0)
@@ -53,12 +54,12 @@ def grade(episode_log: list[dict], final_state: dict) -> float:
     )
 
 
-def evaluate(arg1, arg2=None) -> dict:
+def evaluate(arg1=None, arg2=None) -> dict:
     episode_log, final_state = _normalize_inputs(arg1, arg2)
     score = grade(episode_log, final_state)
     return {"task_id": "task3", "score": score}
 
 
-def score(arg1, arg2=None) -> float:
+def score(arg1=None, arg2=None) -> float:
     episode_log, final_state = _normalize_inputs(arg1, arg2)
     return grade(episode_log, final_state)

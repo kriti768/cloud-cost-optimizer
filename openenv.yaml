@@ -92,6 +92,7 @@ tasks:
     grader: tasks/task1_grader.py
     grader_module: tasks.task1_grader.score
     rubric: tasks.task1_grader.score
+    llm_rubric: rubrics.task1_trajectory_judge
     target_instances: [i-001, i-002, i-003, i-004, i-005]
     forbidden_instances: [i-015, i-016, i-017, i-018, i-019, i-020]
 
@@ -107,6 +108,7 @@ tasks:
     grader: tasks/task2_grader.py
     grader_module: tasks.task2_grader.score
     rubric: tasks.task2_grader.score
+    llm_rubric: rubrics.task2_trajectory_judge
     dimensions:
       - timing_intelligence: 0.40
       - sla_preservation:    0.35
@@ -125,6 +127,7 @@ tasks:
     grader: tasks/task3_grader.py
     grader_module: tasks.task3_grader.score
     rubric: tasks.task3_grader.score
+    llm_rubric: rubrics.task3_trajectory_judge
     dimensions:
       - workload_classification: 0.35
       - interruption_response:   0.30

@@ -10,7 +10,7 @@ def _strict_unit_interval(score: float) -> float:
     return min(0.90, max(0.10, round(score, 4)))
 
 
-def _normalize_inputs(arg1, arg2=None) -> tuple[list[dict], dict | None]:
+def _normalize_inputs(arg1=None, arg2=None) -> tuple[list[dict], dict | None]:
     """Support both (episode_log, final_state) and (final_state, episode_log)."""
     if isinstance(arg1, list):
         return arg1, arg2 if isinstance(arg2, dict) else None
@@ -19,8 +19,9 @@ def _normalize_inputs(arg1, arg2=None) -> tuple[list[dict], dict | None]:
     return [], arg1 if isinstance(arg1, dict) else (arg2 if isinstance(arg2, dict) else None)
 
 
-def grade(episode_log: list[dict], final_state: dict | None = None) -> float:
+def grade(episode_log: list[dict] | None = None, final_state: dict | None = None) -> float:
     """Score 0.0-1.0 based on correct downsizes and avoiding anchor instances."""
+    episode_log, final_state = _normalize_inputs(episode_log, final_state)
     hit, penalized = set(), 0
     for entry in episode_log:
         action = entry.get("action", {})
@@ -34,12 +35,12 @@ def grade(episode_log: list[dict], final_state: dict | None = None) -> float:
     return _strict_unit_interval(max(0.0, len(hit) / 5 - penalized * 0.1))
 
 
-def evaluate(arg1, arg2=None) -> dict:
+def evaluate(arg1=None, arg2=None) -> dict:
     episode_log, final_state = _normalize_inputs(arg1, arg2)
     score = grade(episode_log, final_state)
     return {"task_id": "task1", "score": score}
 
 
-def score(arg1, arg2=None) -> float:
+def score(arg1=None, arg2=None) -> float:
     episode_log, final_state = _normalize_inputs(arg1, arg2)
     return grade(episode_log, final_state)
