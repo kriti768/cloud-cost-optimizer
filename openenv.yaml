@@ -76,7 +76,7 @@ reward:
     Each step: +USD saved this hour vs on-demand baseline
                -0.15 per SLA violation (CPU > 90%)
                -0.15 per unhandled spot interruption on non-stateless workload
-  range: [0.0001, 0.9999]
+  range: [0.01, 0.99]
   partial_credit: true    # scores between 0–1, not binary
 
 # ── Tasks ──────────────────────────────────────────────────────────────────
@@ -84,12 +84,13 @@ tasks:
   - id: task1
     name: "Identify overprovisioned instances"
     difficulty: easy
-    score_range: [0.0001, 0.9999]
+    score_range: [0.01, 0.99]
     description: >
       5 instances (i-001 to i-005) are massively oversized — CPU never exceeds 8%.
       Agent must identify and downsize all 5 within 72 steps without touching the
       6 stable anchor instances (i-015 to i-020).
     grader: tasks/task1_grader.py
+    grader_module: tasks.task1_grader.score
     rubric: tasks.task1_grader.score
     target_instances: [i-001, i-002, i-003, i-004, i-005]
     forbidden_instances: [i-015, i-016, i-017, i-018, i-019, i-020]
@@ -97,13 +98,14 @@ tasks:
   - id: task2
     name: "Schedule-aware scaling"
     difficulty: medium
-    score_range: [0.0001, 0.9999]
+    score_range: [0.01, 0.99]
     description: >
       10 instances follow predictable traffic patterns. Agent must learn that
       web_api workloads peak at 2pm and data_pipeline workloads peak at 3am,
       then schedule scale-downs during the quiet windows. Penalised for SLA
       breaches caused by poor timing.
     grader: tasks/task2_grader.py
+    grader_module: tasks.task2_grader.score
     rubric: tasks.task2_grader.score
     dimensions:
       - timing_intelligence: 0.40
@@ -113,7 +115,7 @@ tasks:
   - id: task3
     name: "Spot + reserved portfolio blending"
     difficulty: hard
-    score_range: [0.0001, 0.9999]
+    score_range: [0.01, 0.99]
     description: >
       Agent manages a 3-account fleet and must decide: which workloads go to
       spot (stateless/batch — safe for interruption), which go to reserved
@@ -121,6 +123,7 @@ tasks:
       monitor for spot interruptions and restore within 2 hours. Budget
       constraints apply across all 3 accounts.
     grader: tasks/task3_grader.py
+    grader_module: tasks.task3_grader.score
     rubric: tasks.task3_grader.score
     dimensions:
       - workload_classification: 0.35

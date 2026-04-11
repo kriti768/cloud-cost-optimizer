@@ -7,7 +7,7 @@ ANCHORS = {"i-015", "i-016", "i-017", "i-018", "i-019", "i-020"}
 
 
 def _strict_unit_interval(score: float) -> float:
-    return min(0.9999, max(0.0001, round(score, 4)))
+    return min(0.99, max(0.01, round(score, 4)))
 
 
 def _normalize_inputs(arg1, arg2=None) -> tuple[list[dict], dict | None]:
