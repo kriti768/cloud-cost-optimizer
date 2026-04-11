@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from typing import Any
 
 try:
-    from openenv.core.rubrics import LLMJudge, EvalHarness, RubricDimension
+    from openenv.core.rubrics import LLMJudge, EvalHarness, Rubric, RubricDimension
 except ImportError:
     # Fallback shim so the file is importable before openenv-core is installed.
     # Replace with the real classes once `pip install openenv-core`.
@@ -61,10 +61,50 @@ except ImportError:
             self.weight = weight
             self.description = description
 
+    class Rubric:  # type: ignore
+        pass
+
 
 def _strict_unit_interval(score: float) -> float:
     """Clamp scores to the open interval (0, 1) for validator compatibility."""
     return min(0.9999, max(0.0001, round(float(score), 4)))
+
+
+class StrictScoreRubric(Rubric):
+    """Wrapper that prevents public rubric entry points from returning 0.0 or 1.0."""
+
+    def __init__(self, judge):
+        try:
+            super().__init__()
+        except Exception:
+            pass
+        self.judge = judge
+
+    @property
+    def client(self):
+        return getattr(self.judge, "client", getattr(self.judge, "_client", None))
+
+    @client.setter
+    def client(self, value):
+        if hasattr(self.judge, "client"):
+            self.judge.client = value
+        if hasattr(self.judge, "_client"):
+            self.judge._client = value
+
+    def __call__(self, action, observation):
+        return self.forward(action, observation)
+
+    async def forward(self, action, observation):
+        result = self.judge(action, observation)
+        if hasattr(result, "__await__"):
+            result = await result
+        if isinstance(result, dict):
+            result = result.get("score", 0.5)
+        return _strict_unit_interval(result)
+
+
+def _strict_rubric(judge):
+    return StrictScoreRubric(judge)
 
 
 # ---------------------------------------------------------------------------
@@ -503,6 +543,17 @@ trajectory_coherence_judge = LLMJudge(
         "exploration_vs_exploitation": 0.25,
     },
 )
+
+# Public rubric entry points are wrapped because the hackathon validator requires
+# every score to be strictly inside (0, 1), while OpenEnv's LLMJudge clamps to
+# the inclusive range [0, 1].
+task1_step_judge = _strict_rubric(task1_step_judge)
+task1_trajectory_judge = _strict_rubric(task1_trajectory_judge)
+task2_step_judge = _strict_rubric(task2_step_judge)
+task2_trajectory_judge = _strict_rubric(task2_trajectory_judge)
+task3_step_judge = _strict_rubric(task3_step_judge)
+task3_trajectory_judge = _strict_rubric(task3_trajectory_judge)
+trajectory_coherence_judge = _strict_rubric(trajectory_coherence_judge)
 
 trajectory_harness = EvalHarness(
     judges=[

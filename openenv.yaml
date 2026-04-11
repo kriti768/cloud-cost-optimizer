@@ -90,7 +90,7 @@ tasks:
       Agent must identify and downsize all 5 within 72 steps without touching the
       6 stable anchor instances (i-015 to i-020).
     grader: tasks/task1_grader.py
-    rubric: rubrics.task1_trajectory_judge
+    rubric: tasks.task1_grader.score
     target_instances: [i-001, i-002, i-003, i-004, i-005]
     forbidden_instances: [i-015, i-016, i-017, i-018, i-019, i-020]
 
@@ -104,7 +104,7 @@ tasks:
       then schedule scale-downs during the quiet windows. Penalised for SLA
       breaches caused by poor timing.
     grader: tasks/task2_grader.py
-    rubric: rubrics.task2_trajectory_judge
+    rubric: tasks.task2_grader.score
     dimensions:
       - timing_intelligence: 0.40
       - sla_preservation:    0.35
@@ -121,7 +121,7 @@ tasks:
       monitor for spot interruptions and restore within 2 hours. Budget
       constraints apply across all 3 accounts.
     grader: tasks/task3_grader.py
-    rubric: rubrics.task3_trajectory_judge
+    rubric: tasks.task3_grader.score
     dimensions:
       - workload_classification: 0.35
       - interruption_response:   0.30
