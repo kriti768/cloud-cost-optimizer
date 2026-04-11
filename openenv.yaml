@@ -66,7 +66,7 @@ observation_space:
     instances:          {type: array,   description: "Array of 20 instance state objects"}
     total_cost_so_far:  {type: number,  description: "Cumulative USD cost this episode"}
     sla_violations:     {type: integer, description: "Total SLA breach count"}
-    savings_vs_baseline:{type: number,  description: "USD saved vs no-action baseline"}
+    savings_vs_baseline: {type: number, description: "USD saved vs no-action baseline"}
     scheduled_actions:  {type: object,  description: "Active schedule rules per instance"}
 
 # ── Reward ─────────────────────────────────────────────────────────────────
