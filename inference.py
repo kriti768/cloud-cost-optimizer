@@ -309,12 +309,6 @@ TASKS = [
 ]
 
 if __name__ == "__main__":
-    print(f"[INFO] {json.dumps({'model':MODEL_NAME,'api':API_BASE_URL})}", flush=True)
-    results = [run_task(tid, tname) for tid, tname in TASKS]
-    print("\n[SUMMARY]", flush=True)
-    for r in results:
-        print(f"  {r['task_id']}: score={r['score']:.4f}", flush=True)
-    overall = sum(r["score"] for r in results) / len(results)
-    print(f"  overall: {overall:.4f}", flush=True)
+    [run_task(tid, tname) for tid, tname in TASKS]
 
 
