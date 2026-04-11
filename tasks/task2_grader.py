@@ -42,3 +42,10 @@ def evaluate(arg1=None, arg2=None) -> dict:
 def score(arg1=None, arg2=None) -> float:
     episode_log, final_state = _normalize_inputs(arg1, arg2)
     return grade(episode_log, final_state)
+
+
+grade_task = score
+grade_task2 = score
+grader = score
+rubric = score
+task_score = score

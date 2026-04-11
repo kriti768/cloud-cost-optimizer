@@ -639,7 +639,7 @@ class CloudCostEnv(_BASE):
         that require reward-like scores to avoid exact 0.0 or 1.0 values.
         """
         squashed = 1.0 / (1.0 + math.exp(-raw_reward))
-        return min(0.9999, max(0.0001, round(squashed, 4)))
+        return min(0.90, max(0.10, round(squashed, 4)))
 
     # ------------------------------------------------------------------
     # Helpers

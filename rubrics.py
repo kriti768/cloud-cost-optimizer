@@ -170,9 +170,9 @@ A BAD action looks like:
   resize i-016 (cpu_avg=68%, r5.xlarge → t3.small) — resizes a healthy \
 database instance to an undersized type, guaranteeing SLA breach.
 
-Score 1.0: Correct target, sensible new type, clear waste reduction.
+Score 0.9: Correct target, sensible new type, clear waste reduction.
 Score 0.5: Correct target but overshoots (e.g. downsizes too aggressively, leaving no headroom).
-Score 0.0: Wrong target (touches a healthy/anchor instance) or action makes things worse.
+Score 0.1: Wrong target (touches a healthy/anchor instance) or action makes things worse.
 """
 
 _TASK1_TRAJECTORY_TEMPLATE = """\
@@ -188,11 +188,11 @@ FINAL STATE:
 
 EVALUATION INSTRUCTIONS:
 Evaluate the agent's complete episode strategy across three dimensions.
-For each dimension score 0.0–1.0, then output the combined weighted score.
+For each dimension Score 0.1–1.0, then output the combined weighted score.
 
 Dimension 1 — target_accuracy (weight 0.50):
   Did the agent correctly identify all 5 overprovisioned instances (i-001 to i-005)?
-  Score 1.0 = all 5 found and resized. Score 0.0 = none found or wrong targets chosen.
+  Score 0.9 = all 5 found and resized. Score 0.1 = none found or wrong targets chosen.
 
 Dimension 2 — sizing_quality (weight 0.30):
   Were the chosen replacement types appropriate? An agent that resizes m5.4xlarge \
@@ -201,7 +201,7 @@ only goes to m5.2xlarge (still 8x oversized).
 
 Dimension 3 — anchor_discipline (weight 0.20):
   Did the agent avoid touching i-015 through i-020 (the stable anchor instances)?
-  Score 1.0 = zero anchor touches. Score 0.0 = any anchor was resized.
+  Score 0.9 = zero anchor touches. Score 0.1 = any anchor was resized.
 
 Compute: final_score = 0.5*d1 + 0.3*d2 + 0.2*d3
 
@@ -266,11 +266,11 @@ EVALUATION INSTRUCTIONS:
 Score the timing wisdom of this single action. The agent should scale DOWN \
 during quiet hours and scale UP before peaks.
 
-Score 1.0: Action correctly anticipates the next traffic pattern \
+Score 0.9: Action correctly anticipates the next traffic pattern \
 (e.g. schedules a web-api scale-down at hour 22, before the overnight quiet period).
 Score 0.5: Action is directionally correct but poorly timed \
 (e.g. scales down at hour 12, right before the 2pm peak — risky).
-Score 0.0: Action is actively harmful — scales down a web-api instance at hour 13 \
+Score 0.1: Action is actively harmful — scales down a web-api instance at hour 13 \
 (one hour before peak), or resizes a data-pipeline instance at 3am during its peak.
 """
 
@@ -292,17 +292,17 @@ Dimension 1 — timing_intelligence (weight 0.40):
   Did the agent's scale-down actions consistently target off-peak windows?
   Look for: schedule actions placed at hours 21–8 for web-api, and hours 8–23 for data-pipeline.
   Penalise: scale-downs placed within 2 hours of a known peak.
-  Score 1.0 = all scale-downs timed correctly. Score 0.0 = agent ignored patterns entirely.
+  Score 0.9 = all scale-downs timed correctly. Score 0.1 = agent ignored patterns entirely.
 
 Dimension 2 — sla_preservation (weight 0.35):
   How well did the agent protect SLA throughout the 72-hour episode?
   Check `sla_violations` in the final state.
-  Score 1.0 = zero violations. Score 0.5 = 1–2 violations. Score 0.0 = 5+ violations.
+  Score 0.9 = zero violations. Score 0.5 = 1–2 violations. Score 0.1 = 5+ violations.
 
 Dimension 3 — savings_efficiency (weight 0.25):
   What fraction of the theoretical maximum savings did the agent capture?
   (total_savings_usd / max_possible_savings_usd) from the final state.
-  Score 1.0 = ≥80% of max captured. Score 0.5 = 40–80%. Score 0.0 = <40%.
+  Score 0.9 = ≥80% of max captured. Score 0.5 = 40–80%. Score 0.1 = <40%.
 
 Note: An agent can score well on timing but poorly on savings if it was too conservative \
 (never scaled down enough). Both dimensions matter.
@@ -375,7 +375,7 @@ AGENT ACTION:
 EVALUATION INSTRUCTIONS:
 Score the agent's single pricing or restoration decision.
 
-Score 1.0 — examples of perfect actions:
+Score 0.9 — examples of perfect actions:
   convert_spot i-011 (workload=stateless) — correct, stateless is spot-safe.
   reserve i-015 (workload=database, pricing=on_demand) — correct, databases need stability.
   restore i-012 after spot interruption within 2 hours — fast recovery.
@@ -384,7 +384,7 @@ Score 0.5 — examples of acceptable but suboptimal actions:
   reserve i-011 (workload=stateless) — safe but leaves money on the table (spot would be cheaper).
   convert_spot i-009 (workload=data_pipeline) — data pipelines run at night, risky but not catastrophic.
 
-Score 0.0 — examples of harmful actions:
+Score 0.1 — examples of harmful actions:
   convert_spot i-015 (workload=database) — converts a database to spot, will cause SLA breach.
   noop while i-012 is interrupted for >3 hours — ignores a spot interruption, SLA breach accumulating.
 """
@@ -415,19 +415,19 @@ when it could have been spot or reserved? Penalise opportunity cost.
 
 Dimension 2 — interruption_response (weight 0.30):
   How quickly did the agent restore interrupted spot instances?
-  Score 1.0 = all interruptions restored within 2 hours.
+  Score 0.9 = all interruptions restored within 2 hours.
   Score 0.5 = restored within 4 hours.
-  Score 0.0 = any interruption unresolved for >6 hours, or ignored entirely.
+  Score 0.1 = any interruption unresolved for >6 hours, or ignored entirely.
   Note: if the agent converted no instances to spot, this dimension scores 0.5 \
 (neutral — no risk taken, no response needed).
 
 Dimension 3 — portfolio_efficiency (weight 0.20):
   Total cost reduction vs on-demand baseline across all 3 accounts.
-  Score 1.0 = ≥50% cost reduction. Score 0.5 = 25–50%. Score 0.0 = <10%.
+  Score 0.9 = ≥50% cost reduction. Score 0.5 = 25–50%. Score 0.1 = <10%.
 
 Dimension 4 — budget_discipline (weight 0.15):
   Did the agent stay within the monthly_budget constraint in the final state?
-  Score 1.0 = final projected monthly cost ≤ budget. Score 0.0 = over budget.
+  Score 0.9 = final projected monthly cost ≤ budget. Score 0.1 = over budget.
 
 Compute: final_score = 0.35*d1 + 0.30*d2 + 0.20*d3 + 0.15*d4
 
@@ -503,23 +503,23 @@ closely, restored promptly when interrupted
      - "Scheduler": learned traffic patterns, used schedule actions to capture off-peak \
 savings without touching instance types
    An incoherent agent randomly mixes all action types with no apparent logic. \
-Score 1.0 = clearly coherent strategy. Score 0.0 = random, reactive, no evident plan.
+Score 0.9 = clearly coherent strategy. Score 0.1 = random, reactive, no evident plan.
 
 2. Adaptability (0.35):
    When something went wrong (SLA breach, spot interruption, unexpected spike), \
 did the agent adapt its subsequent decisions?
-   Score 1.0 = clear behavioural change after adverse events (e.g. after an SLA \
+   Score 0.9 = clear behavioural change after adverse events (e.g. after an SLA \
 breach, agent becomes more conservative about downsizing similar instances).
    Score 0.5 = partial adaptation (acknowledged the event but didn't fully adjust).
-   Score 0.0 = agent repeated the same mistake after an adverse event, or ignored \
+   Score 0.1 = agent repeated the same mistake after an adverse event, or ignored \
 adverse events entirely.
 
 3. Exploration vs exploitation (0.25):
    Did the agent try multiple action types (resize, schedule, spot, reserve) to \
 find the best strategy, or did it myopically exploit only one?
-   Score 1.0 = agent used 3+ distinct action types purposefully.
+   Score 0.9 = agent used 3+ distinct action types purposefully.
    Score 0.5 = agent used 2 action types.
-   Score 0.0 = agent used only noop or a single action type throughout.
+   Score 0.1 = agent used only noop or a single action type throughout.
 
 Compute: coherence_score = 0.40*d1 + 0.35*d2 + 0.25*d3
 

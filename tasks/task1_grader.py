@@ -20,7 +20,7 @@ def _normalize_inputs(arg1=None, arg2=None) -> tuple[list[dict], dict | None]:
 
 
 def grade(episode_log: list[dict] | None = None, final_state: dict | None = None) -> float:
-    """Score 0.0-1.0 based on correct downsizes and avoiding anchor instances."""
+    """Score 0.10-0.90 based on correct downsizes and avoiding anchor instances."""
     episode_log, final_state = _normalize_inputs(episode_log, final_state)
     hit, penalized = set(), 0
     for entry in episode_log:
@@ -44,3 +44,10 @@ def evaluate(arg1=None, arg2=None) -> dict:
 def score(arg1=None, arg2=None) -> float:
     episode_log, final_state = _normalize_inputs(arg1, arg2)
     return grade(episode_log, final_state)
+
+
+grade_task = score
+grade_task1 = score
+grader = score
+rubric = score
+task_score = score
