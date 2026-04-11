@@ -13,7 +13,7 @@ def _normalize_inputs(arg1, arg2=None) -> tuple[list[dict], dict]:
 
 
 def _strict_unit_interval(score: float) -> float:
-    return min(0.99, max(0.01, round(score, 4)))
+    return min(0.90, max(0.10, round(score, 4)))
 
 
 def grade(episode_log: list[dict], final_state: dict) -> float:

@@ -67,7 +67,7 @@ except ImportError:
 
 def _strict_unit_interval(score: float) -> float:
     """Clamp scores to the open interval (0, 1) for validator compatibility."""
-    return min(0.99, max(0.01, round(float(score), 4)))
+    return min(0.90, max(0.10, round(float(score), 4)))
 
 
 class StrictScoreRubric(Rubric):
